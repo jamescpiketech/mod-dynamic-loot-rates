@@ -4,6 +4,8 @@
 #include "Config.h"
 #include "Map.h"
 
+#include <cmath>
+
 struct DynamicLootRatesConfig {
     bool enabled = true;
     
@@ -12,6 +14,9 @@ struct DynamicLootRatesConfig {
 
     uint32 raidLootGroupRate = 1;
     uint32 raidLootReferenceRate = 1;
+
+    float worldLootGroupRate = 1.0f;
+    float worldLootReferenceRate = 1.0f;
 };
 
 DynamicLootRatesConfig config;
@@ -28,6 +33,8 @@ public:
         config.dungeonLootReferenceRate = sConfigMgr->GetOption<uint32>("DynamicLootRates.Dungeon.Rate.ReferencedAmount", 1);
         config.raidLootGroupRate = sConfigMgr->GetOption<uint32>("DynamicLootRates.Raid.Rate.GroupAmount", 1);
         config.raidLootReferenceRate = sConfigMgr->GetOption<uint32>("DynamicLootRates.Raid.Rate.ReferencedAmount", 1);
+        config.worldLootGroupRate = sConfigMgr->GetOption<float>("Rate.Drop.Item.GroupAmount", 1.0f);
+        config.worldLootReferenceRate = sConfigMgr->GetOption<float>("Rate.Drop.Item.ReferencedAmount", 1.0f);
     }
 };
 
@@ -43,14 +50,14 @@ public:
         }
 
         if (isDungeon(player->GetMap())) {
-            groupAmount = config.dungeonLootGroupRate;
-            LOG_DEBUG("module", "mod_dynamic_loot_rates: In dungeon: Applying loot group rate of {}", groupAmount);
+            groupAmount = AdjustInstanceAmount(groupAmount, config.worldLootGroupRate, config.dungeonLootGroupRate);
+            LOG_DEBUG("module", "mod_dynamic_loot_rates: In dungeon: Applying loot group multiplier of {} (world rate {}), resulting in {}", config.dungeonLootGroupRate, config.worldLootGroupRate, groupAmount);
             return;
         }
 
         if (isRaid(player->GetMap())) {
-            groupAmount = config.raidLootGroupRate;
-            LOG_DEBUG("module", "mod_dynamic_loot_rates: In raid: Applying loot group rate of {}", groupAmount);
+            groupAmount = AdjustInstanceAmount(groupAmount, config.worldLootGroupRate, config.raidLootGroupRate);
+            LOG_DEBUG("module", "mod_dynamic_loot_rates: In raid: Applying loot group multiplier of {} (world rate {}), resulting in {}", config.raidLootGroupRate, config.worldLootGroupRate, groupAmount);
             return;
         }
     }
@@ -62,14 +69,14 @@ public:
         }
 
         if (isDungeon(player->GetMap())) {
-            maxcount = config.dungeonLootGroupRate;
-            LOG_DEBUG("module", "mod_dynamic_loot_rates: In dungeon: Applying loot reference rate of {}", maxcount);
+            maxcount = AdjustInstanceAmount(maxcount, config.worldLootReferenceRate, config.dungeonLootReferenceRate);
+            LOG_DEBUG("module", "mod_dynamic_loot_rates: In dungeon: Applying loot reference multiplier of {} (world rate {}), resulting in {}", config.dungeonLootReferenceRate, config.worldLootReferenceRate, maxcount);
             return;
         }
 
         if (isRaid(player->GetMap())) {
-            maxcount = config.raidLootGroupRate;
-            LOG_DEBUG("module", "mod_dynamic_loot_rates: In raid: Applying loot reference rate of {}", maxcount);
+            maxcount = AdjustInstanceAmount(maxcount, config.worldLootReferenceRate, config.raidLootReferenceRate);
+            LOG_DEBUG("module", "mod_dynamic_loot_rates: In raid: Applying loot reference multiplier of {} (world rate {}), resulting in {}", config.raidLootReferenceRate, config.worldLootReferenceRate, maxcount);
             return;
         }
     }
@@ -80,6 +87,24 @@ public:
 
     bool isRaid(Map* map) {
         return map->IsRaid();
+    }
+
+private:
+    uint32 AdjustInstanceAmount(uint32 currentAmount, float worldRate, uint32 instanceRate) const
+    {
+        if (worldRate <= 0.0f) {
+            // Fallback to previous behavior if world rate is invalid.
+            return currentAmount * instanceRate;
+        }
+
+        double normalizedAmount = static_cast<double>(currentAmount) / static_cast<double>(worldRate);
+        double scaledAmount = normalizedAmount * static_cast<double>(instanceRate);
+
+        if (scaledAmount < 0.0) {
+            return 0;
+        }
+
+        return static_cast<uint32>(std::round(scaledAmount));
     }
 };
 
