@@ -13,21 +13,21 @@
 DynamicLootRates.Enable = 1
 
 #    DynamicLootRates.Dungeon.Rate.GroupAmount
-#        Description: Multiplier for referenced loot amount inside of dungeons
+#        Description: Multiplier for grouped items inside of dungeons
 #        Default:     1
 DynamicLootRates.Dungeon.Rate.GroupAmount = 1
 
-#    DynamicLootRates.Dungeon.Rate.GroupAmount
-#        Description: Multiplier for grouped items inside of dungeons
+#    DynamicLootRates.Dungeon.Rate.ReferencedAmount
+#        Description: Multiplier for referenced loot amount inside of dungeons
 #        Default:     1
 DynamicLootRates.Dungeon.Rate.ReferencedAmount = 1
 
-#    DynamicLootRates.Dungeon.Rate.GroupAmount
-#        Description: Multiplier for referenced loot amount inside of raids
+#    DynamicLootRates.Raid.Rate.GroupAmount
+#        Description: Multiplier for grouped items inside of raids
 #        Default:     1
 DynamicLootRates.Raid.Rate.GroupAmount = 1
 
-#    DynamicLootRates.Dungeon.Rate.GroupAmount
-#        Description: Multiplier for grouped items inside of raids
+#    DynamicLootRates.Raid.Rate.ReferencedAmount
+#        Description: Multiplier for referenced loot amount inside of raids
 #        Default:     1
 DynamicLootRates.Raid.Rate.ReferencedAmount = 1
