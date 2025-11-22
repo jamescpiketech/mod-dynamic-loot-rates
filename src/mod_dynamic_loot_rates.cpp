@@ -27,7 +27,7 @@ public:
             : WorldScript("DynamicLootRates_WorldScript") {
     }
 
-    void OnBeforeConfigLoad(bool /*reload*/) override {
+    void OnAfterConfigLoad(bool /*reload*/) override {
         config.enabled = sConfigMgr->GetOption<bool>("DynamicLootRates.Enable", true);
         config.dungeonLootGroupRate = sConfigMgr->GetOption<uint32>("DynamicLootRates.Dungeon.Rate.GroupAmount", 1);
         config.dungeonLootReferenceRate = sConfigMgr->GetOption<uint32>("DynamicLootRates.Dungeon.Rate.ReferencedAmount", 1);
@@ -45,17 +45,22 @@ public:
 
     void OnAfterCalculateLootGroupAmount(Player const *player, Loot & /*loot*/, uint16 /*lootMode*/, uint32 &groupAmount, LootStore const & /*store*/) override
     {
-        if (!config.enabled) {
+        if (!config.enabled || !player) {
             return;
         }
 
-        if (isDungeon(player->GetMap())) {
+        Map* map = player->GetMap();
+        if (!map) {
+            return;
+        }
+
+        if (isDungeon(map)) {
             groupAmount = AdjustInstanceAmount(groupAmount, config.worldLootGroupRate, config.dungeonLootGroupRate);
             LOG_DEBUG("module", "mod_dynamic_loot_rates: In dungeon: Applying loot group multiplier of {} (world rate {}), resulting in {}", config.dungeonLootGroupRate, config.worldLootGroupRate, groupAmount);
             return;
         }
 
-        if (isRaid(player->GetMap())) {
+        if (isRaid(map)) {
             groupAmount = AdjustInstanceAmount(groupAmount, config.worldLootGroupRate, config.raidLootGroupRate);
             LOG_DEBUG("module", "mod_dynamic_loot_rates: In raid: Applying loot group multiplier of {} (world rate {}), resulting in {}", config.raidLootGroupRate, config.worldLootGroupRate, groupAmount);
             return;
@@ -64,17 +69,22 @@ public:
 
     void OnAfterRefCount(Player const *player, LootStoreItem * /*LootStoreItem*/, Loot & /*loot*/, bool /*canRate*/, uint16 /*lootMode*/, uint32 &maxcount, LootStore const & /*store*/) override
     {
-        if (!config.enabled) {
+        if (!config.enabled || !player) {
             return;
         }
 
-        if (isDungeon(player->GetMap())) {
+        Map* map = player->GetMap();
+        if (!map) {
+            return;
+        }
+
+        if (isDungeon(map)) {
             maxcount = AdjustInstanceAmount(maxcount, config.worldLootReferenceRate, config.dungeonLootReferenceRate);
             LOG_DEBUG("module", "mod_dynamic_loot_rates: In dungeon: Applying loot reference multiplier of {} (world rate {}), resulting in {}", config.dungeonLootReferenceRate, config.worldLootReferenceRate, maxcount);
             return;
         }
 
-        if (isRaid(player->GetMap())) {
+        if (isRaid(map)) {
             maxcount = AdjustInstanceAmount(maxcount, config.worldLootReferenceRate, config.raidLootReferenceRate);
             LOG_DEBUG("module", "mod_dynamic_loot_rates: In raid: Applying loot reference multiplier of {} (world rate {}), resulting in {}", config.raidLootReferenceRate, config.worldLootReferenceRate, maxcount);
             return;
